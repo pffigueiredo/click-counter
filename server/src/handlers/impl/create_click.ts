@@ -9,18 +9,26 @@ import { type CreateClickInput, type Click, clickSchema } from '../../schema';
  * @returns The newly created click record
  */
 export async function createClick(input: CreateClickInput): Promise<Click> {
-  const result = await db.insert(clicksTable)
-    .values({
-      ip_address: input.ip_address ?? null,
-      user_agent: input.user_agent ?? null,
-    })
-    .returning()
-    .execute();
-  
-  if (!result.length) {
-    throw new Error('Failed to create click record');
+  try {
+    const result = await db.insert(clicksTable)
+      .values({
+        ip_address: input.ip_address ?? null,
+        user_agent: input.user_agent ?? null,
+      })
+      .returning()
+      .execute();
+    
+    if (!result.length) {
+      throw new Error('Failed to create click record');
+    }
+    
+    // Parse through zod schema to ensure type safety
+    return clickSchema.parse(result[0]);
+  } catch (error) {
+    // Log the detailed error
+    console.error('Click creation failed:', error);
+    
+    // Re-throw the original error to preserve stack trace
+    throw error;
   }
-  
-  // Parse through zod schema to ensure type safety
-  return clickSchema.parse(result[0]);
 }
